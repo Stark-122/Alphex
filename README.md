@@ -1,2 +1,2 @@
 # Project-VERONICA
-An Open-Source AI Project.
+An Open Source alternative to OpenAI's AI tools.
