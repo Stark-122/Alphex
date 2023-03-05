@@ -212,6 +212,6 @@ print(loss.item())
 joblib.dump(model, "VeronicaModel.lm")
 print("Model trained successfully.")
 print("Output after Model Training:")
-model_loaded = joblib.load("VeronicaModel.l")
+model_loaded = joblib.load("VeronicaModel.lm")
 print(decode(model_loaded.generate(idx = torch.zeros((1, 1), dtype=torch.long), max_new_tokens=100)[0].tolist()))
 
