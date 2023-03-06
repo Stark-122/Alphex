@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  Train Veronica:
 
     runs-on: ubuntu-latest
 
@@ -31,6 +31,6 @@ jobs:
     - name: Train And Run Veronica
       run: |
         # stop the build if there are Python syntax errors or undefined names
-        python3 Veronica.py . --count --select=E9,F63,F7,F82 --show-source --statistics
+        python3 main.py . --count --select=E9,F63,F7,F82 --show-source --statistics
        
  

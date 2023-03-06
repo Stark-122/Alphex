@@ -3,27 +3,29 @@ import joblib
 import torch 
 import torch.nn as nn
 from torch.nn import functional as F
+from AI import DataLoader
 
 #Reading Data from given DataSet
-with open('DataSet/tiny-shakespeare.txt', 'r', encoding='utf-8') as f:
-    text = f.read()
+
+text = DataLoader.open_file('DataSet/tiny-shakespeare.txt', 'r')
 
 
 chars = sorted(list(set(text)))
 vocab_size = len(chars)
 
 #Hyperparameters
-batch_size = 32 # how many independent sequences will we process in parallel?
-block_size = 64 # what is the maximum context length for predictions?
+batch_size = 16 # how many independent sequences will we process in parallel?
+block_size = 32 # what is the maximum context length for predictions?
 max_iters = 5000
-eval_interval = 10
-learning_rate = 2e-4
+eval_interval = 1000
+learning_rate = 3e-4
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 eval_iters = 500
-num_embd = 96
-head_size = 24
-num_heads = 4
-n_layer = 3
+num_embd = 100
+head_size = 100
+num_heads = 100
+n_layer = 100
+
 #Tokenization
 stoi = { ch:i for i, ch in enumerate(chars) }
 itos = { i:ch for i, ch in enumerate(chars) }
@@ -33,7 +35,7 @@ decode = lambda l: ''.join([itos[i] for i in l]) #Decoder : Takes integer input,
 
 data = torch.tensor(encode(text), dtype=torch.long)
 
-n = int(0.9 * len(data)) #Takes 90% of data
+n = int(0.8 * len(data)) #Takes 90% of data
 train_data = data[:n] #Uses the 90% of Data as Training Value
 val_data = data[n:] #Rest 10% of data as validation Data
 
@@ -57,7 +59,7 @@ for b in range(batch_size):
         context = xb[b, :t+1]
         target = yb[b, t]
 
-class Head(nn.Module):
+class Head(nn.Module ):
     def __init__(self , head_size):
         super().__init__()
         self.key = nn.Linear(num_embd, head_size, bias=False)
@@ -76,7 +78,7 @@ class Head(nn.Module):
         out = wei @ v
         return out 
 
-class MultiHeadAttention(nn.Module):
+class MultiHeadAttention(nn.Module ):
     def __init__(self , num_heads, head_size):
         super().__init__()
         self.heads = nn.ModuleList([Head(head_size=head_size) for _ in range(num_heads)])
@@ -87,7 +89,7 @@ class MultiHeadAttention(nn.Module):
         return out
 
 class FeedForward(nn.Module):
-    def __init__(self, num_embd):
+    def __init__(self, num_embd ):
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(num_embd, 4 * num_embd),
@@ -155,11 +157,12 @@ class VeronicaModel(nn.Module):
             idx = torch.cat((idx, idx_next), dim=1) # (B, T+1)
         return idx
     
-    
+   
         
 model = VeronicaModel(vocab_size=vocab_size)
 logits, loss = model(xb , yb)
 
+print(f"Model contains : {sum(p.numel() for p in model.parameters())//1e-6}  parameters.")
 print ("Output before model training: ")
 print(decode(model.generate(idx = torch.zeros((1, 1), dtype=torch.long), max_new_tokens=50)[0].tolist()))
 
@@ -183,8 +186,6 @@ def estimate_loss():
 #training the model
 
 optimizer = torch.optim.AdamW(model.parameters(), lr=1e-1)
-
-
 
 for iter in range(max_iters):
 
