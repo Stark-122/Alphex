@@ -24,7 +24,6 @@ num_embd = 96
 head_size = 24
 num_heads = 4
 n_layer = 3
-dropout = 0.21
 #Tokenization
 stoi = { ch:i for i, ch in enumerate(chars) }
 itos = { i:ch for i, ch in enumerate(chars) }
@@ -65,7 +64,6 @@ class Head(nn.Module):
         self.query = nn.Linear(num_embd, head_size, bias=False)
         self.value = nn.Linear(num_embd, head_size, bias=False)
         self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
-        self.dropout = nn.Dropout(dropout)
     def forward(self, x):
         B,T,C = x.shape
         k = self.key(x)
@@ -74,7 +72,6 @@ class Head(nn.Module):
         wei = q @ k.transpose(-2,-1) * C**-0.5
         wei = wei.masked_fill(self.tril[:T, :T] == 0, float('-inf'))
         wei = F.softmax(wei, dim=-1)
-        wei = self.dropout(wei)
         v = self.value(x)
         out = wei @ v
         return out 
@@ -84,10 +81,9 @@ class MultiHeadAttention(nn.Module):
         super().__init__()
         self.heads = nn.ModuleList([Head(head_size=head_size) for _ in range(num_heads)])
         self.proj = nn.Linear(num_heads * head_size, num_embd)
-        self.dropout = nn.Dropout(dropout)
     def forward(self, x):
         out = torch.cat([h(x) for h in self.heads], dim=-1)
-        out = self.dropout(self.proj(out))
+        out = self.proj(out)
         return out
 
 class FeedForward(nn.Module):
@@ -97,7 +93,6 @@ class FeedForward(nn.Module):
             nn.Linear(num_embd, 4 * num_embd),
             nn.ReLU(),
             nn.Linear(4 * num_embd, num_embd),
-            nn.Dropout(dropout)
         )
     def forward(self, x):
         return self.net(x)
