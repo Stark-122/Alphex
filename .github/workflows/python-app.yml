@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 jobs:
-  Train Veronica:
+  Train-Veronica:
 
     runs-on: ubuntu-latest
 
