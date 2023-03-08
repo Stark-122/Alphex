@@ -16,25 +16,25 @@ val_data = data[n:] #Rest 10% of data as validation Data
 
 
 #_____Hyperparameters______
-batch_size = 16 
-block_size = 32
-max_iters = 15000
-eval_interval = 1000
-learning_rate = 3e-4
+batch_size = 16 # how many independent sequences will we process in parallel?
+block_size = 32 # what is the maximum context length for predictions?
+max_iters = 5000
+eval_interval = 100
+learning_rate = 1e-3
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-eval_iters = 500
-num_embd = 10
-head_size = 10
-num_heads = 10
-n_layer = 10
+eval_iters = 200
+num_embd = 64
+num_heads = 4
+n_layer = 4
 dropout = 0.0
-#__________________________
+# ________________________
 
 x = train_data[:block_size]
 y = train_data[1:block_size+1]
 
-
 class Head(nn.Module):
+    """ one head of self-attention """
+
     def __init__(self, head_size):
         super().__init__()
         self.key = nn.Linear(num_embd, head_size, bias=False)
@@ -52,13 +52,15 @@ class Head(nn.Module):
         wei = q @ k.transpose(-2,-1) * C**-0.5 # (B, T, C) @ (B, C, T) -> (B, T, T)
         wei = wei.masked_fill(self.tril[:T, :T] == 0, float('-inf')) # (B, T, T)
         wei = F.softmax(wei, dim=-1) # (B, T, T)
-       # wei = self.dropout(wei)
+        wei = self.dropout(wei)
         # perform the weighted aggregation of the values
         v = self.value(x) # (B,T,C)
         out = wei @ v # (B, T, T) @ (B, T, C) -> (B, T, C)
-        return out 
+        return out
 
-class MultiHeadAttention(nn.Module ):
+class MultiHeadAttention(nn.Module):
+    """ multiple heads of self-attention in parallel """
+
     def __init__(self, num_heads, head_size):
         super().__init__()
         self.heads = nn.ModuleList([Head(head_size) for _ in range(num_heads)])
@@ -67,36 +69,42 @@ class MultiHeadAttention(nn.Module ):
 
     def forward(self, x):
         out = torch.cat([h(x) for h in self.heads], dim=-1)
-        out = self.proj(out)
+        out = self.dropout(self.proj(out))
         return out
 
-class FeedForward(nn.Module):
-    def __init__(self, n_embd):
+class FeedFoward(nn.Module):
+    """ a simple linear layer followed by a non-linearity """
+
+    def __init__(self, num_embd):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(n_embd, 4 * n_embd),
+            nn.Linear(num_embd, 4 * num_embd),
             nn.ReLU(),
-            nn.Linear(4 * n_embd, n_embd),
+            nn.Linear(4 * num_embd, num_embd),
             nn.Dropout(dropout),
         )
 
     def forward(self, x):
         return self.net(x)
-    
+
 class Block(nn.Module):
-    def __init__(self, n_embd, n_head):
-        # n_embd: embedding dimension, n_head: the number of heads we'd like
+    """ Transformer block: communication followed by computation """
+
+    def __init__(self, num_embd, n_head):
+        # num_embd: embedding dimension, n_head: the number of heads we'd like
         super().__init__()
-        head_size = n_embd // n_head
+        head_size = num_embd // n_head
         self.sa = MultiHeadAttention(n_head, head_size)
-        self.ffwd = FeedForward(n_embd)
-        self.ln1 = nn.LayerNorm(n_embd)
-        self.ln2 = nn.LayerNorm(n_embd)
+        self.ffwd = FeedFoward(num_embd)
+        self.ln1 = nn.LayerNorm(num_embd)
+        self.ln2 = nn.LayerNorm(num_embd)
 
     def forward(self, x):
         x = x + self.sa(self.ln1(x))
         x = x + self.ffwd(self.ln2(x))
         return x
+
+# super simple bigram model
 class VeronicaModel(nn.Module):
 
     def __init__(self):
@@ -157,10 +165,12 @@ def get_eval_data():
     return eval_iters, max_iters , eval_interval
 
 def get_batch(split):
+    # generate a small batch of data of inputs x and targets y
     data = train_data if split == 'train' else val_data
     ix = torch.randint(len(data) - block_size, (batch_size,))
     x = torch.stack([data[i:i+block_size] for i in ix])
     y = torch.stack([data[i+1:i+block_size+1] for i in ix])
+    x, y = x.to(device), y.to(device)
     return x, y
 
 def get_block_size():
