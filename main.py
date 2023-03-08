@@ -21,4 +21,4 @@ if __name__ == "__main__":
         Train.train_model()
     else:
         model_loaded = joblib.load("VeronicaModel.lm")
-        print(Tokenizer.decode(model_loaded.generate(idx = torch.zeros((1, 1), dtype=torch.long), max_new_tokens=100)[0].tolist()))
+        print(Tokenizer.decode(model_loaded.generate(idx = torch.zeros((1, 1), dtype=torch.long), max_new_tokens=1000)[0].tolist()))

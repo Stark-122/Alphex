@@ -1,4 +1,5 @@
 import torch
+import joblib
 from AI import Veronica
 
 model = Veronica.get_model()
@@ -38,4 +39,4 @@ def train_model():
         optimizer.zero_grad(set_to_none=True)
         loss.backward()
         optimizer.step()
-        
+    joblib.dump(model, "VeronicaModel.lm")

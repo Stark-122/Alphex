@@ -1,12 +1,15 @@
 import os
-from AI import loadData
+import nltk
+from nltk import word_tokenize
 
 #Reading Data from given DataSet
 os.listdir()
 with open('DataSet/tiny-shakespeare.txt', 'r', encoding='utf-8') as f:
         text = f.read()
-chars = sorted(list(set(text)))
+chars = word_tokenize(text)
+print(chars)
 vocab_size = len(chars)
+print(vocab_size)
 
 #Tokenization
 stoi = { ch:i for i, ch in enumerate(chars) }
