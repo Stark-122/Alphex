@@ -18,7 +18,7 @@ val_data = data[n:] #Rest 10% of data as validation Data
 #_____Hyperparameters______
 batch_size = 16 
 block_size = 32
-max_iters = 5000
+max_iters = 15000
 eval_interval = 1000
 learning_rate = 3e-4
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -27,84 +27,98 @@ num_embd = 10
 head_size = 10
 num_heads = 10
 n_layer = 10
+dropout = 0.0
 #__________________________
 
 x = train_data[:block_size]
 y = train_data[1:block_size+1]
 
 
-class Head(nn.Module ):
-    def __init__(self , head_size):
+class Head(nn.Module):
+    def __init__(self, head_size):
         super().__init__()
         self.key = nn.Linear(num_embd, head_size, bias=False)
         self.query = nn.Linear(num_embd, head_size, bias=False)
         self.value = nn.Linear(num_embd, head_size, bias=False)
         self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
+
+        self.dropout = nn.Dropout(dropout)
+
     def forward(self, x):
         B,T,C = x.shape
-        k = self.key(x)
-        q = self.query(x)
-        
-        wei = q @ k.transpose(-2,-1) * C**-0.5
-        wei = wei.masked_fill(self.tril[:T, :T] == 0, float('-inf'))
-        wei = F.softmax(wei, dim=-1)
-        v = self.value(x)
-        out = wei @ v
+        k = self.key(x)   # (B,T,C)
+        q = self.query(x) # (B,T,C)
+        # compute attention scores ("affinities")
+        wei = q @ k.transpose(-2,-1) * C**-0.5 # (B, T, C) @ (B, C, T) -> (B, T, T)
+        wei = wei.masked_fill(self.tril[:T, :T] == 0, float('-inf')) # (B, T, T)
+        wei = F.softmax(wei, dim=-1) # (B, T, T)
+       # wei = self.dropout(wei)
+        # perform the weighted aggregation of the values
+        v = self.value(x) # (B,T,C)
+        out = wei @ v # (B, T, T) @ (B, T, C) -> (B, T, C)
         return out 
 
 class MultiHeadAttention(nn.Module ):
-    def __init__(self , num_heads, head_size):
+    def __init__(self, num_heads, head_size):
         super().__init__()
-        self.heads = nn.ModuleList([Head(head_size=head_size) for _ in range(num_heads)])
-        self.proj = nn.Linear(num_heads * head_size, num_embd)
+        self.heads = nn.ModuleList([Head(head_size) for _ in range(num_heads)])
+        self.proj = nn.Linear(num_embd, num_embd)
+        self.dropout = nn.Dropout(dropout)
+
     def forward(self, x):
         out = torch.cat([h(x) for h in self.heads], dim=-1)
         out = self.proj(out)
         return out
 
 class FeedForward(nn.Module):
-    def __init__(self, num_embd ):
+    def __init__(self, n_embd):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(num_embd, 4 * num_embd),
+            nn.Linear(n_embd, 4 * n_embd),
             nn.ReLU(),
-            nn.Linear(4 * num_embd, num_embd),
+            nn.Linear(4 * n_embd, n_embd),
+            nn.Dropout(dropout),
         )
+
     def forward(self, x):
         return self.net(x)
     
 class Block(nn.Module):
-    def __init__(self, num_embd, n_heads) -> None:
+    def __init__(self, n_embd, n_head):
+        # n_embd: embedding dimension, n_head: the number of heads we'd like
         super().__init__()
-        headsize = num_embd // n_heads
-        self.sa = MultiHeadAttention(num_heads , headsize)
-        self.ffwd = FeedForward(num_embd)
-        self.ln1 = nn.LayerNorm(num_embd)
-        self.ln2 = nn.LayerNorm(num_embd)
-    def forward(self , x):
+        head_size = n_embd // n_head
+        self.sa = MultiHeadAttention(n_head, head_size)
+        self.ffwd = FeedForward(n_embd)
+        self.ln1 = nn.LayerNorm(n_embd)
+        self.ln2 = nn.LayerNorm(n_embd)
+
+    def forward(self, x):
         x = x + self.sa(self.ln1(x))
         x = x + self.ffwd(self.ln2(x))
         return x
 class VeronicaModel(nn.Module):
 
-    def __init__(self, vocab_size):
+    def __init__(self):
         super().__init__()
         # each token directly reads off the logits for the next token from a lookup table
         self.token_embedding_table = nn.Embedding(vocab_size, num_embd)
-        self.position_embedding_table= nn.Embedding(block_size, num_embd)
-        self.blocks = nn.Sequential(*[Block(num_embd, num_heads) for b in range(n_layer)])
-        self.ln_f = nn.LayerNorm(num_embd)
+        self.position_embedding_table = nn.Embedding(block_size, num_embd)
+        self.blocks = nn.Sequential(*[Block(num_embd, n_head=num_heads) for _ in range(n_layer)])
+        self.ln_f = nn.LayerNorm(num_embd) # final layer norm
         self.lm_head = nn.Linear(num_embd, vocab_size)
 
     def forward(self, idx, targets=None):
         B, T = idx.shape
 
-        tok_embd = self.token_embedding_table(idx)
-        pos_embd = self.position_embedding_table(torch.arange(T, device=device))
-        x = tok_embd + pos_embd
-        x = self.blocks(x)
-        x = self.ln_f(x)
-        logits = self.lm_head(x)
+        # idx and targets are both (B,T) tensor of integers
+        tok_emb = self.token_embedding_table(idx) # (B,T,C)
+        pos_emb = self.position_embedding_table(torch.arange(T, device=device)) # (T,C)
+        x = tok_emb + pos_emb # (B,T,C)
+        x = self.blocks(x) # (B,T,C)
+        x = self.ln_f(x) # (B,T,C)
+        logits = self.lm_head(x) # (B,T,vocab_size)
+
         if targets is None:
             loss = None
         else:
@@ -114,11 +128,12 @@ class VeronicaModel(nn.Module):
             loss = F.cross_entropy(logits, targets)
 
         return logits, loss
-    
+
     def generate(self, idx, max_new_tokens):
         # idx is (B, T) array of indices in the current context
         for _ in range(max_new_tokens):
-            idx_cond = idx[: , -block_size:]
+            # crop idx to the last block_size tokens
+            idx_cond = idx[:, -block_size:]
             # get the predictions
             logits, loss = self(idx_cond)
             # focus only on the last time step
@@ -130,9 +145,10 @@ class VeronicaModel(nn.Module):
             # append sampled index to the running sequence
             idx = torch.cat((idx, idx_next), dim=1) # (B, T+1)
         return idx
+
     
  
-model = VeronicaModel(vocab_size)
+model = VeronicaModel()
 
 def get_model():
     return model

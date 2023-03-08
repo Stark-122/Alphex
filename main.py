@@ -11,7 +11,7 @@ for b in range(Veronica.get_batch_size()):
         context = xb[b, :t+1]
         target = yb[b, t]
         
-model = Veronica.VeronicaModel(vocab_size=Tokenizer.get_vocab_size())
+model = Veronica.VeronicaModel()
 logits, loss = model(xb , yb)
 
 print(f"Model contains : {sum(p.numel() for p in model.parameters())//1e-6}  parameters.")
