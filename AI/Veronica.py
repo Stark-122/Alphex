@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from AI  import loadData, Tokenizer
+from AI  import  Tokenizer
 
 text = Tokenizer.get_raw_data()
 chars = Tokenizer.get_tokens()
