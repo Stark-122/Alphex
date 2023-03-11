@@ -48,4 +48,4 @@ def train_model():
         optimizer.step()
 
     
-    torch.save(model, "Model/VeronicaModel.lm")
+    torch.save(model, "Model/AlphexLanguageModel.lm")
