@@ -3,16 +3,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 from AI  import  Tokenizer
 
-text = Tokenizer.get_raw_data()
-chars = Tokenizer.get_tokens()
+text = Tokenizer.get_data()
 vocab_size = Tokenizer.get_vocab_size()
 data = torch.tensor(Tokenizer.encode(text), dtype=torch.long)
 
 n = int(0.8 * len(data)) #Takes 90% of data
 train_data = data[:n] #Uses the 90% of Data as Training Value
 val_data = data[n:] #Rest 10% of data as validation Data
-
-
 
 
 #_____Hyperparameters______
@@ -104,8 +101,8 @@ class Block(nn.Module):
         x = x + self.ffwd(self.ln2(x))
         return x
 
-# super simple bigram model
-class VeronicaModel(nn.Module):
+
+class AlphexLanguageModel(nn.Module):
 
     def __init__(self):
         super().__init__()
@@ -156,7 +153,7 @@ class VeronicaModel(nn.Module):
 
     
  
-model = VeronicaModel()
+model = AlphexLanguageModel()
 
 def get_model():
     return model
