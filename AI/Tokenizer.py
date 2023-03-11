@@ -34,7 +34,6 @@ def decode(data):
         decoded_text = ' '.join([list(vocab.keys())[list(vocab.values()).index(index-2)] for index in data])
         return decoded_text
 
-print(decode(encode(input_text[:1000])))
 
 def get_data():
       return input_text
