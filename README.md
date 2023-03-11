@@ -1,4 +1,4 @@
-# Project VERONICA
-An Open Source Generative PreTrained Transformer.
+# Alphex
+An Open Source AI Project.
 
 **Note:** The project is under heavy development.
