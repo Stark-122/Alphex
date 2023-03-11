@@ -37,16 +37,7 @@ def train_model():
         if iter % eval_interval == 0 or iter == max_iters - 1:
             losses, loss = estimate_loss()
             print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
-            if loss <= best_train_loss or loss <= best_val_loss:
-                checkpoint_path = os.path.join(checkpoint_dir, f"model_checkpoint_{iter}.pt")
-                torch.save({
-                    'epoch': iter,
-                    'model_state_dict': model.state_dict(),
-                    'model': model,
-                    'optimizer_state_dict': optimizer.state_dict(),
-                    'loss': loss
-                }, checkpoint_path)
-
+            
         # sample a batch of data
         xb, yb = Veronica.get_batch('train')
 

@@ -21,7 +21,7 @@ if __name__ == "__main__":
         logits, loss = model(xb , yb)
         print("training model...")
         Train.train_model()
-        
+        print(Tokenizer.decode(model.generate(idx = torch.zeros((1, 1), dtype=torch.long), max_new_tokens=2000)[0].tolist()))
     else:
         model_loaded = torch.load("Model/VeronicaModel.lm") 
         print(f"Model contains : {sum(p.numel() for p in model_loaded.parameters())//1e-6}  parameters.")

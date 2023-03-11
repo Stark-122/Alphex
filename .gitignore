@@ -6,3 +6,4 @@ build/
 *.pyi
 *.pyd
 *.pt
+Tokenizer2.py
