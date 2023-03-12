@@ -31,7 +31,7 @@ def encode(text):
 
 #Decode encoded text back to the original text
 def decode(data):
-        decoded_text = ' '.join([list(vocab.keys())[list(vocab.values()).index(index - 3)] for index in data])
+        decoded_text = ' '.join([list(vocab.keys())[list(vocab.values()).index(index - 2)] for index in data])
         return decoded_text
 
 
