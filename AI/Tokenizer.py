@@ -31,7 +31,7 @@ def encode(text):
 
 #Decode encoded text back to the original text
 def decode(data):
-        decoded_text = ' '.join([list(vocab.keys())[list(vocab.values()).index(index - 2)] for index in data])
+        decoded_text = ' '.join([list(vocab.keys())[list(vocab.values()).index(index - 3)] for index in data])
         return decoded_text
 
 
@@ -39,3 +39,6 @@ def get_data():
       return input_text
 def get_vocab_size():
       return vocab_size
+
+#t2 = input_text[:2000]
+#print(decode(encode(t2)))
