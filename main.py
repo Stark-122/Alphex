@@ -22,7 +22,7 @@ if __name__ == "__main__":
         Train.train_model()
         print(Tokenizer.decode(model.generate(idx = torch.zeros((1, 1), dtype=torch.long), max_new_tokens=2000)[0].tolist()))
     else:
-        model_loaded = torch.load("Model/AlphexLanguageModel.lm") 
+        model_loaded = joblib.load("Model/AlphexLanguageModel.lm") 
         print(f"Model contains : {sum(p.numel() for p in model_loaded.parameters())//1e-6}  parameters.")
         print("Model's output : ")
         print(Tokenizer.decode(model_loaded.generate(idx = torch.zeros((1, 1), dtype=torch.long), max_new_tokens=2000)[0].tolist()))

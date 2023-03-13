@@ -20,9 +20,8 @@ for word in words:
         vocab[word] = len(vocab)
 
 # Step 5: Assign unique integer index to each word in the vocabulary
-# index 0 will be reserved for padding, index 1 for unknown words
-vocab_size = len(vocab) + 3
-word_to_index = {word: index+3 for index, word in enumerate(vocab)}
+vocab_size = len(vocab)
+word_to_index = {word: index for index, word in enumerate(vocab)}
 
 def encode(text):
         #Encode input text by replacing each word with its corresponding integer index
@@ -31,7 +30,8 @@ def encode(text):
 
 #Decode encoded text back to the original text
 def decode(data):
-        decoded_text = ' '.join([list(vocab.keys())[list(vocab.values()).index(index - 3)] for index in data])
+        decoded_text = ' '.join([list(vocab.keys())[list(vocab.values()).index(index)] for index in data])
+        
         return decoded_text
 
 
@@ -40,5 +40,3 @@ def get_data():
 def get_vocab_size():
       return vocab_size
 
-#t2 = input_text[:2000]
-#print(decode(encode(t2)))
