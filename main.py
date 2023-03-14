@@ -1,24 +1,28 @@
 import os
 import torch
 import joblib
-from AI import  Veronica, Tokenizer, Train
+from AI import  Alphex, Tokenizer, Train
 
 
-xb, yb = Veronica.get_batch('train')
 
-for b in range(Veronica.get_batch_size()):
-    for t in range(Veronica.get_block_size()):
-        context = xb[b, :t+1]
-        target = yb[b, t]
-        
-model = Veronica.VeronicaModel()
-logits, loss = model(xb , yb)
 
-print(f"Model contains : {sum(p.numel() for p in model.parameters())//1e-6}  parameters.")
+
 if __name__ == "__main__":
-    if(os.path.exists("VeronicaModel.lm") == False):
+    if(os.path.exists("Model/AlphexLanguageModel.lm") == False):
+        model = Alphex.AlphexLanguageModel()
+        xb, yb = Alphex.get_batch('train')
+
+        for b in range(Alphex.get_batch_size()):
+            for t in range(Alphex.get_block_size()):
+                context = xb[b, :t+1]
+                target = yb[b, t]
+        print(f"Model contains : {sum(p.numel() for p in model.parameters())//1e-6}  parameters.")
+        logits, loss = model(xb , yb)
         print("training model...")
         Train.train_model()
+        print(Tokenizer.decode(model.generate(idx = torch.zeros((1, 1), dtype=torch.long), max_new_tokens=2000)[0].tolist()))
     else:
-        model_loaded = joblib.load("VeronicaModel.lm")
-        print(Tokenizer.decode(model_loaded.generate(idx = torch.zeros((1, 1), dtype=torch.long), max_new_tokens=1000)[0].tolist()))
+        model_loaded = joblib.load("Model/AlphexLanguageModel.lm") 
+        print(f"Model contains : {sum(p.numel() for p in model_loaded.parameters())//1e-6}  parameters.")
+        print("Model's output : ")
+        print(Tokenizer.decode(model_loaded.generate(idx = torch.zeros((1, 1), dtype=torch.long), max_new_tokens=2000)[0].tolist()))

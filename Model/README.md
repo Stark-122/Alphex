@@ -1,0 +1,1 @@
+Folder where AI models will be stored after training.
